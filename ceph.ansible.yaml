@@ -1,0 +1,82 @@
+---
+- name: 部署ceph
+  hosts: ceph
+  become: true
+  vars:
+    ceph1:
+      ip: 10.0.30.101
+      name: node101
+    ceph2:
+      ip: 10.0.30.102
+      name: node102
+    ceph3:
+      ip: 10.0.30.103
+      name: node103
+    ceph_password: Mao3long
+  tasks:
+    ######
+    - name: 配置ceph软件包源
+      when: ansible_distribution == "Rocky"
+      block:
+        - name: 配置hosts文件（所有节点）
+          ansible.builtin.lineinfile:
+            path: /etc/hosts
+            regexp: ^{{ item.ip }}
+            line: "{{ item.ip }} {{ item.name }}"
+          loop:
+            - "{{ ceph1 }}"
+            - "{{ ceph2 }}"
+            - "{{ ceph3 }}"
+
+        - name: 启用ceph仓库和依赖的基础工具
+          ansible.builtin.package:
+            name:
+              - epel-release
+              - centos-release-ceph-squid
+              - chrony
+              - curl
+              - wget
+            state: present
+        - name: 配置时间同步（启动chronyd服务）
+          ansible.builtin.service:
+            name: chronyd
+            state: started
+            enabled: true
+        - name: 验证时间同步状态
+          ansible.builtin.shell: |
+            chronyc -a makestep
+            systemctl restart chronyd
+            chronyc source
+          changed_when: false
+          when: ansible_distribution == "Rocky"
+        - name: 配置防火墙
+          ansible.posix.firewalld:
+            port: "{{ item }}"
+            permanent: true
+            state: enabled
+            zone: public
+            immediate: true
+          loop:
+            - 3300/tcp
+            - 6789/tcp
+            - 6800-7300/tcp
+        - name: 安装ceph软件包
+          ansible.builtin.package:
+            name:
+              - cephadm
+            state: present
+    ######
+    - name: 配置第一个Monitor节点（node101)
+      when: inventory_hostname == ceph1.name
+      block:
+        - name: 初始化第一个节点
+          ansible.builtin.command: cephadm bootstrap --mon-ip "{{ ceph1.ip }}" --initial-dashboard-password "{{ ceph_password }}" --dashboard-password-noupdate
+          changed_when: true
+        - name: 获取key
+          ansible.builtin.command: ceph auth get client.bootstrap-osd
+          changed_when: false
+          register: jr
+          delegate_to: ceph1
+        - name: 获取到的jr值为：
+          ansible.builtin.debug:
+            msg: "{{ jr }}"

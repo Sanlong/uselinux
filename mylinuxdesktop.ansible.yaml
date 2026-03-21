@@ -1,0 +1,34 @@
+---
+- name: Install My Linux Desktop
+  hosts: all
+  become: true
+  tasks:
+    - name: "Install My Linux Desktop"
+      when: ansible_distribution == "Ubuntu"
+      block:
+        - name: "Add fsearch PPA repository"
+          ansible.builtin.apt_repository:
+            repo: ppa:fsearch-boxdoerfer/fsearch-stable
+            state: present
+        - name: "Ubuntu Desktop Installation"
+          ansible.builtin.apt:
+            pkg:
+              - ubuntu-restricted-extras
+              - gnome-shell-extension-manager
+              - epiphany-browser
+              - fcitx5-chinese-addons
+              - ansible-lint
+              - cockpit-pcp
+              - containerd
+              - setroubleshoot-server
+              - fsearch
+              - golang
+              - podman
+              - flatpak
+              - git
+              - curl
+              - vim
+              - wget
+              - sshuttle
+            state: present
+            update_cache: true

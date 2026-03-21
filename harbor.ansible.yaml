@@ -1,0 +1,66 @@
+---
+- name: 部署harbor
+  hosts: all
+  become: true
+  vars:
+    domain_name: "" # 网站域名
+    harbor_admin_password: "" # harbor管理员密码
+  tasks:
+    - name: 创建harbor用户
+      when: domain_name != "" and harbor_admin_password != ""
+      block:
+        - name: 从官网下载harbor
+          ansible.builtin.get_url:
+            url: https://github.com/goharbor/harbor/releases/download/v2.13.1/harbor-online-installer-v2.13.1.tgz
+            dest: /root/
+            mode: '0644'
+        - name: 解压
+          ansible.builtin.unarchive:
+            src: /root/harbor-online-installer-v2.13.1.tgz
+            dest: /root/
+            remote_src: true
+        - name: 复制一份配置文件
+          ansible.builtin.copy:
+            src: /root/harbor/harbor.yml.tmpl
+            dest: /root/harbor/harbor.yml
+            remote_src: true
+            mode: '0644'
+    - name: 配置harbor
+      when: domain_name != "" and harbor_admin_password != ""
+      block:
+        - name: 修改web登陆密码
+          ansible.builtin.lineinfile:
+            path: /root/harbor/harbor.yml
+            regexp: '^harbor_admin_password:'
+            line: "harbor_admin_password: {{ harbor_admin_password }}"
+        - name: 修改引用证书路径(如果是证书供应商给的，应该引用的是证书链）
+          ansible.builtin.lineinfile:
+            path: /root/harbor/harbor.yml
+            regexp: '^  certificate: /your/certificate/path'
+            line: '  certificate: /your/certificate/test'
+        - name: 修改引用私钥路径
+          ansible.builtin.lineinfile:
+            path: /root/harbor/harbor.yml
+            regexp: '^  private_key: /your/private/key/path'
+            line: '  private_key: /your/private/key/test'
+            mode: '0644'
+        - name: 修改域名
+          ansible.builtin.lineinfile:
+            path: /root/harbor/harbor.yml
+            regexp: '^hostname: reg.mydomain.com'
+            line: "hostname: {{ domain_name }}"
+    - name: 安装harbor
+      when: domain_name != "" and harbor_admin_password != ""
+      block:
+        - name: 安装docker
+          ansible.builtin.package:
+            name: docker-ce
+            state: present
+        - name: 运行docker
+          ansible.builtin.service:
+            name: docker
+            state: started
+            enabled: true
+        - name: 最后一步，运行install.sh
+          ansible.builtin.command: /root/harbor/install.sh
+          changed_when: true

@@ -1,0 +1,128 @@
+---
+- name: 部署zabbix server 7.0在rocky9.6上
+  hosts: all
+  become: true
+  vars:
+    zabbix_server: localhost
+    zabbix_node: localhost
+    mysql_root_password: "Mao3long"
+    zabbix_db_password: "zabbix"
+
+  tasks:
+    - name: 配置zabbix server 7.0
+      when: ansible_hostname == zabbix_server
+#### 第一个block开始
+      block:
+        - name: server安装软件
+          debug:
+            msg: "通知一下"
+        - name: 添加zabbix官方7.0仓库
+          dnf:
+            name: 'https://repo.zabbix.com/zabbix/7.0/alma/9/x86_64/zabbix-release-latest-7.0.el9.noarch.rpm'
+            state: present
+        - name: 部署server上的东西
+          package:
+            name:
+            - zabbix-server-mysql
+            - zabbix-web-mysql
+            - zabbix-nginx-conf
+            - zabbix-sql-scripts
+            - zabbix-selinux-policy
+            - zabbix-agent
+            - mariadb-server
+            - langpacks-zh_CN
+          state: present
+        - name: 启动数据库
+          service:
+            name: mariadb
+            enabled: yes
+            state: started
+          #    - name: 设置数据库密码
+          #      ansible.builtin.shell: |
+          #        mysql -u root -p '' <<EOF
+          #        ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}'
+          #        FLUSH PRIVILEGES;
+          #        quit;
+          #        EOF
+        - name: 创建数据库、用户并授权
+          shell: |
+            mysql -u root -p"{{ mysql_root_password }}" <<EOF
+            CREATE DATABASE IF NOT EXISTS zabbix CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+            CREATE USER IF NOT EXISTS 'zabbix'@'localhost' IDENTIFIED BY "{{ zabbix_db_password }}";
+            GRANT ALL PRIVILEGES ON zabbix.* TO 'zabbix'@'localhost';
+            SET GLOBAL log_bin_trust_function_creators = 1;
+            FLUSH PRIVILEGES;
+            #quit;
+            EOF
+            #这里是不是应该加一个逻辑，确定已经成功导入，而不用再次导入
+            zcat /usr/share/zabbix-sql-scripts/mysql/server.sql.gz | mysql --default-character-set=utf8mb4 -uzabbix -p'{{ zabbix_db_password }}' zabbix
+            mysql -u root -p'{{ mysql_root_password }}' <<EOF
+            SET GLOBAL log_bin_trust_function_creators = 0;
+            #quit;
+            EOF
+          args:
+            executable: /bin/bash
+        - name: 为zabbix server配置数据库
+          lineinfile:
+            path: /etc/zabbix/zabbix_server.conf
+            regexp: '^DBPassword='
+            line: DBPassword={{ zabbix_db_password }}
+#### 第二个block开始
+        - name: 为zabbix前端配置php
+          ansible.builtin.lineinfile:
+            path: /etc/nginx/conf.d/zabbix.conf
+            regexp: '^#        listen          8080'
+            line:         listen          8080;
+        - name: 为zabbix前端配置php
+          ansible.builtin.lineinfile:
+            path: /etc/nginx/conf.d/zabbix.conf
+            regexp: '^#        server_name     example.com'
+            line:         server_name     node101;
+        - name: 启动zabbix server和agent进程
+          ansible.builtin.systemd:
+            name: "{{ item }}"
+            state: started
+            enabled: yes
+          loop:
+            - zabbix-server
+            - zabbix-agent
+            - nginx
+            - php-fpm
+        - name: 打开防火墙
+          ansible.builtin.shell: |
+            firewall-cmd --permanent --add-port=8080/tcp --zone=public
+            firewall-cmd --reload
+      rescue:
+          - name: 出现错误时通知
+            debug:
+              msg: 发生了错误！
+      delegate_to: "{{ zabbix_server }}"
+#### 部署设置node节点
+    - name: 配置zabbix agent 7.0
+      when: ansible_hostname == zabbix_node
+      block:
+        - name: 安装zabbix agent 7.0
+          ansible.builtin.shell: |
+            rpm -Uvh https://repo.zabbix.com/zabbix/7.0/alma/9/x86_64/zabbix-agent-7.0.13-release1.el9.x86_64.rpm
+        - name: 配置hosts中到zabbix server的解析
+          ansible.builtin.lineinfile:
+            path: /etc/hosts
+            regexp: '^10.0.30.101'
+            line: 10.0.30.101 node101
+        - name: 配置zabbix agent配置文件中的server
+          ansible.builtin.lineinfile:
+            path: /etc/zabbix/zabbix_agentd.conf
+            regexp: '^Server='
+            line: Server=node101
+        - name: 配置agent主动模式server地址
+          ansible.builtin.lineinfile:
+            path: /etc/zabbix/zabbix_agentd.conf
+            regexp: '^ServerActive='
+            line: ServerActive=node101
+        - name: 启动agent并开机启动
+          ansible.builtin.service:
+            name: zabbix-agent
+            state: started
+            enabled: yes
+      delegate_to: "{{ zabbix_node }}"
+

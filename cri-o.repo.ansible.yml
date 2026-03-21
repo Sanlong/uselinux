@@ -1,0 +1,14 @@
+---
+- name: "Add cri-o仓库"
+  hosts: all
+  become: true
+  tasks:
+    - name: 编辑repo
+      ansible.builtin.yum_repository:
+        name: cri-o
+        description: cri-o v1.32 stable
+        baseurl: https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.32/rpm/
+        gpgkey: https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.32/rpm/repodata/repomd.xml.key
+        gpgcheck: true
+        state: present
+        enabled: true

@@ -1,0 +1,60 @@
+---
+- name: 我的工作环境初始化
+  hosts: localhost
+  tasks:
+    - block:
+      - name: 修改软件源
+        lineinfile:
+          path: /etc/yum.repos.d/openEuler.repo
+          regexp: '^meta'
+          state: absent
+        become: true
+
+      when: ansible_distribution == 'openEuler'
+    - block:
+      - name: 安装必备软件(Rocky)
+        package:
+          name: "{{ item }}"
+          state: latest
+        become: true
+        loop:
+          - langpacks-zh_CN
+          - epel-release
+          - vim-ansible
+      when: ansible_distribution == 'Rocky'
+    - block: 
+      - name: 安装公共必备软件
+        package:
+          name: "{{ item }}"
+          state: latest
+        become: true
+        loop:
+          - open-vm-tools
+          - fuse
+          - wget
+          - curl
+          - git
+          - bash-completion
+          - vim
+          - ansible
+          - zsh
+          - '*'
+      - name: 查找共享目录
+        ansible.builtin.command: vmware-hgfsclient
+        register: share
+      - name: 显示共享目录
+        ansible.builtin.debug:
+          msg: "{{ share.stdout_lines }}"
+      - name: 设置.ssh共享目录
+        ansible.builtin.lineinfile:
+          path: /etc/fstab
+          regexp: "^host:{{ share.stdout_lines[0] }}"
+          line: .host:/{{ share.stdout_lines[0] }} /home/msl/{{ share.stdout_lines[0] }} fuse.vmhgfs-fuse allow_other,uid=1000,gid=1000,umask=177 0 0
+          state: present
+      - name: 设置mslfile共享目录
+        ansible.builtin.lineinfile:
+          path: /etc/fstab
+          regexp: "^host:{{ share.stdout_lines[1] }}"
+          line: .host:/{{ share.stdout_lines[1] }} /home/msl/{{ share.stdout_lines[1] }} fuse.vmhgfs-fuse allow_other,uid=1000,gid=1000,umask=077 0 0
+          state: present
+      when: osfamily == 'RedHat'

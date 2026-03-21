@@ -1,0 +1,122 @@
+---
+- name: 部署etcd
+  hosts: etcd
+  become: true
+  vars:
+    etcd1: oe104
+    etcd1_ip: 10.0.30.104
+    etcd2: oe105
+    etcd2_ip: 10.0.30.105
+    etcd3: oe106
+    etcd3_ip: 10.0.30.106
+    etcd_version: v3.6.1
+    etcd_data_dir: /var/lib/etcd
+    etcd_conf_dir: /etc/etcd
+    etcd_user: etcd
+    etcd_group: etcd
+
+  tasks:
+    - name: 安装etcd二进制包
+      when: ansible_distribution == 'Rocky'
+      block:
+        - name: 官网下载二进制包
+          ansible.builtin.get_url:
+            url: https://github.com/etcd-io/etcd/releases/download/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-amd64.tar.gz
+            dest: /tmp
+            mode: '0644'
+        - name: 解压
+          ansible.builtin.unarchive:
+            src: /tmp/etcd-{{ etcd_version }}-linux-amd64.tar.gz
+            dest: /tmp/
+            remote_src: true
+        - name: 拷贝etcd到/usr/local/bin/
+          ansible.builtin.copy:
+            src: /tmp/etcd-{{ etcd_version }}-linux-amd64/
+            dest: /usr/local/bin/
+            mode: a+x
+            remote_src: true
+        - name: 验证etcd版本
+          ansible.builtin.command: /usr/local/bin/etcd --version
+          changed_when: false
+          register: ver
+        - name: 验证效果
+          ansible.builtin.debug:
+            msg: "{{ ver }}"
+    - name: 安装etcd（openEuler）
+      when: ansible_distribution == 'openEuler'
+      block:
+        - name: 安装etcd
+          ansible.builtin.package:
+            name: etcd
+            state: present
+
+    - name: 配置etcd（openEuler）
+      when: ansible_distribution == 'openEuler'
+      block:
+        - name: 检查etcd.conf状态
+          ansible.builtin.stat:
+            path: /etc/etcd/etcd.conf
+          register: st
+        - name: 输出etcd.conf状态
+          ansible.builtin.fail:
+            msg: "etcd.conf文件不存在"
+          when: not st.stat.exists
+        - name: 修改etcd.conf配置
+          ansible.builtin.lineinfile:
+            path: /etc/etcd/etcd.conf
+            regexp: "^#*{{ item.key }}"
+            line: "{{ item.key }}={{ item.value }}"
+            state: present
+            backrefs: true
+            mode: '0644'
+          become: true
+          when: st.stat.exists
+          loop:
+            - { key: "ETCD_NAME", value: "{{ ansible_hostname }}" } ## 主机名
+            - { key: "ETCD_INITIAL_ADVERTISE_PEER_URLS", value: "\"https://{{ ansible_default_ipv4.address }}:2380\"" }
+            - { key: "ETCD_LISTEN_PEER_URLS", value: "\"https://{{ ansible_default_ipv4.address }}:2380\"" }
+            - { key: "ETCD_LISTEN_CLIENT_URLS", value: "\"https://{{ ansible_default_ipv4.address }}:2379,https://127.0.0.1:2379\"" }
+            - { key: "ETCD_ADVERTISE_CLIENT_URLS", value: "\"https://{{ ansible_default_ipv4.address }}:2379\"" }
+            - { key: "ETCD_INITIAL_CLUSTER_TOKEN", value: "\"etcd-cluster-1\"" }
+            - { key: "ETCD_INITIAL_CLUSTER",
+                value: "{{ etcd1 }}=https://{{ etcd1_ip }}:2380,{{ etcd2 }}=https://{{ etcd2_ip }}:2380,{{ etcd3 }}=https://{{ etcd3_ip }}:2380" }
+            - { key: "ETCD_INITIAL_CLUSTER_STATE", value: "\"new\"" }
+              # - { key: "ETCD_CLIENT_TRANSPORT_SECURITY", value: "\"cert-file=/etc/etcd/ssl/etcd.pem,key-file=/etc/etcd/ssl/etcd-key.pem\"" }
+              # - { key: "ETCD_PEER_TRANSPORT_SECURITY", value: "\"cert-file=/etc/etcd/ssl/etcd.pem,key-file=/etc/etcd/ssl/etcd-key.pem\"" }
+            - { key: "ETCD_PEER_AUTO_TLS", value: "\"true\"" }
+            - { key: "ETCD_AUTO_TLS", value: "\"true\"" }
+        - name: 清空etcd.service
+          ansible.builtin.file:
+            path: /usr/lib/systemd/system/etcd.service
+            state: absent
+          when: 1 == 0
+        - name: 设置etcd.service
+          ansible.builtin.blockinfile:
+            path: /usr/lib/systemd/system/etcd.service
+            marker: "#{ mark } ansible configed"
+            block: |
+              [Unit]
+              Description=Etcd Server
+              After=network.target
+              After=network-online.target
+              Wants=network-online.target
+
+              [Service]
+              Type=notify
+              WorkingDirectory=/var/lib/etcd/
+              ExecStart=/bin/bash -c "GOMAXPROCS=$(nproc) etcd --config={{ etcd_conf_dir }}/etcd.conf"
+              Restart=on-failure #always
+              RestartSec=10s
+              LimitNOFILE=65536
+              User={{ etcd_user }}
+
+              [Install]
+              WantedBy=multi-user.target
+          become: true
+          when: 1 == 0
+######
+        - name: 启动etcd
+          ansible.builtin.systemd:
+            name: etcd
+            state: restarted
+            enabled: true

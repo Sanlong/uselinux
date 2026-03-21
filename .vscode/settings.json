@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 {
     "ansible.python.interpreterPath": "c:\\Users\\maosanlong\\OneDrive\\文档\\GitHub\\HowToDeploy\\.venv\\Scripts\\python.exe",
     "python.testing.unittestArgs": [
@@ -14,4 +15,25 @@
     "yaml.schemas": {
         "file:///c%3A/Users/maosanlong/.vscode/extensions/ms-python.python-2025.2.0-win32-x64/schemas/condarc.json": "file:///c%3A/Users/maosanlong/OneDrive/%E6%96%87%E6%A1%A3/GitHub/HowToDeploy/awx_depoly/awx_deploy.yml"
     }
+=======
+{
+    "ansible.python.interpreterPath": "",
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./awx_depoly",
+        "-p",
+        "*test.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true,
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "yaml.schemas": {
+        "file:///c%3A/Users/maosanlong/.vscode/extensions/ms-python.python-2025.2.0-win32-x64/schemas/condarc.json": "file:///c%3A/Users/maosanlong/OneDrive/%E6%96%87%E6%A1%A3/GitHub/HowToDeploy/awx_depoly/awx_deploy.yml"
+    },
+    "ansible.validation.lint.path": "ansible-lint",
+    "ansible.executionEnvironment.enabled": true,
+    "ansible.executionEnvironment.containerEngine": "podman",
+    "ansible.executionEnvironment.containerOptions": "--runtime /usr/bin/runc"
+>>>>>>> Stashed changes
 }
