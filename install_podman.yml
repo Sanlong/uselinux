@@ -1,43 +1,43 @@
 ---
 - name: Install Podman
   hosts: all
-  become: yes
+  become: true
 
   tasks:
     - name: Install Podman on RedHat
       when: ansible_facts['os_family'] == 'RedHat'
       block:
         - name: Enable EPEL repository
-          dnf:
+          ansible.builtin.dnf:
             name: epel-release
             state: present
 
         - name: Install Podman
-          dnf:
+          ansible.builtin.dnf:
             name: podman
-            state: latest
+            state: present
 
     - name: Install Podman on Debian
       when: ansible_facts['os_family'] == 'Debian'
       block:
         - name: Add Kubic repository
-          apt_repository:
+          ansible.builtin.apt_repository:
             repo: deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_{{ ansible_distribution_version }}/ /
             filename: podman
             state: present
-            update_cache: yes
+            update_cache: true
 
         - name: Install Podman
-          apt:
+          ansible.builtin.apt:
             name: podman
-            state: latest
-            update_cache: yes
+            state: present
+            update_cache: true
 
     - name: Verify Podman installation
-      command: podman --version
+      ansible.builtin.command: podman --version
       register: podman_version
       changed_when: false
 
     - name: Show installed version
-      debug:
+      ansible.builtin.debug:
         msg: "Podman {{ podman_version.stdout }} installed"

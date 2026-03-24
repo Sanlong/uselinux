@@ -14,16 +14,13 @@
           ansible.builtin.apt:
             pkg:
               - ubuntu-restricted-extras
-              - gnome-shell-extension-manager
-              - epiphany-browser
               - fcitx5-chinese-addons
               - ansible-lint
               - cockpit-pcp
               - containerd
-              - setroubleshoot-server
-              - fsearch
               - golang
               - podman
+              - build-essential
               - flatpak
               - git
               - curl
@@ -32,3 +29,8 @@
               - sshuttle
             state: present
             update_cache: true
+    - name: 设置flatpak
+      when: ansible_distribution == "Ubuntu"
+      block:
+        - name: 添加官方源
+          ansible.builtin.command: flatpak remote-add --if-not-exists flathub https://mirror.sjtu.edu.cn/flathub/flathub.flatpakrepo

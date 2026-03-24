@@ -11,10 +11,10 @@
             "id": "45db87f6b774a36b",
             "type": "leaf",
             "state": {
-              "type": "empty",
+              "type": "graph",
               "state": {},
-              "icon": "lucide-file",
-              "title": "新标签页"
+              "icon": "lucide-git-fork",
+              "title": "关系图谱"
             }
           }
         ]
@@ -74,7 +74,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "right": {
     "id": "5060260a17455c48",
@@ -176,6 +176,14 @@
       "bases:新建数据库": false
     }
   },
-  "active": "45db87f6b774a36b",
-  "lastOpenFiles": []
+  "active": "5fc34f4364bddc8b",
+  "lastOpenFiles": [
+    "OpenSSH/openssh_know.md",
+    "openssh_know.md",
+    "install_podman.yml",
+    "ELK/Logstash.md",
+    "集团信息技术架构/01-IT架构总体规划.md",
+    "未命名.base",
+    "集团信息技术架构/02-安全规范与实施.md"
+  ]
 }
