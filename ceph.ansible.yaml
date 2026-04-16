@@ -34,8 +34,11 @@
               - epel-release
               - centos-release-ceph-squid
               - chrony
+              - python3-jinja2
               - curl
+              - podman
               - wget
+              - cephadm
             state: present
         - name: 配置时间同步（启动chronyd服务）
           ansible.builtin.service:

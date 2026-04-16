@@ -11,10 +11,14 @@
             "id": "45db87f6b774a36b",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "关系图谱"
+              "type": "markdown",
+              "state": {
+                "file": "openstack/aio-quickstart-zh.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "aio-quickstart-zh"
             }
           }
         ]
@@ -176,14 +180,19 @@
       "bases:新建数据库": false
     }
   },
-  "active": "5fc34f4364bddc8b",
+  "active": "45db87f6b774a36b",
   "lastOpenFiles": [
+    "openstack/rhce_practical_lab.md",
+    "openstack/packstack-README.md",
+    "openstack/packstack-details.md",
     "OpenSSH/openssh_know.md",
+    "未命名.canvas",
+    "未命名 1.base",
+    "未命名.base",
     "openssh_know.md",
     "install_podman.yml",
     "ELK/Logstash.md",
     "集团信息技术架构/01-IT架构总体规划.md",
-    "未命名.base",
     "集团信息技术架构/02-安全规范与实施.md"
   ]
 }
