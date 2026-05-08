@@ -1,0 +1,83 @@
+---
+- name: 安装 RKE2 Server
+  hosts: rke2_servers
+  vars:
+    rke2_version: v1.35.4+rke2r1
+    rke2_token: "123456"
+    system_default_registry: "registry.cn-hangzhou.aliyuncs.com"
+    rke2_server_url: "https://172.16.0.98:9345"
+
+  tasks:
+    - name: 初始化 RHEL 系系统 (Rocky/AlmaLinux/CentOS/RedHat)
+      when: ansible_facts['distribution'] in ['Rocky', 'AlmaLinux', 'CentOS', 'RedHat']
+      block:
+        - name: 安装依赖
+          ansible.builtin.dnf:
+            name:
+              - curl
+              - gnupg
+              - tar
+            state: present
+            update_cache: true
+          become: true
+
+    - name: 初始化 Debian 系系统 (Debian/Ubuntu)
+      when: ansible_facts['distribution'] in ['Debian', 'Ubuntu']
+      block:
+        - name: 安装依赖
+          ansible.builtin.apt:
+            name:
+              - curl
+              - gnupg
+              - tar
+            state: present
+            update_cache: true
+          become: true
+
+    - name: 部署 RKE2 Server
+      block:
+        - name: 创建 RKE2 配置目录
+          ansible.builtin.file:
+            path: /etc/rancher/rke2/
+            state: directory
+            mode: '0755'
+          become: true
+
+        - name: 写入 RKE2 Server 配置文件
+          ansible.builtin.template:
+            dest: /etc/rancher/rke2/config.yaml
+            content: |
+              server: {{ rke2_server_url }}
+              token: {{ rke2_token }}
+              system-default-registry: {{ system_default_registry }}
+            mode: '0600'
+          become: true
+
+        - name: 使用国内镜像安装 RKE2
+          ansible.builtin.shell:
+            cmd: curl -sfL https://rancher-mirror.rancher.cn/rke2/install.sh | INSTALL_RKE2_MIRROR=cn INSTALL_RKE2_VERSION={{ rke2_version }} sh -
+            creates: /usr/local/bin/rke2
+          become: true
+
+        - name: 启用并启动 RKE2 Server 服务
+          ansible.builtin.systemd:
+            name: rke2-server
+            enabled: true
+            state: started
+            daemon_reload: true
+          become: true
+
+        - name: 等待 RKE2 Server 启动完成
+          ansible.builtin.wait_for:
+            path: /etc/rancher/rke2/rke2.yaml
+            state: present
+            timeout: 120
+          become: true
+
+        - name: 复制 kubeconfig 到用户目录
+          ansible.builtin.copy:
+            src: /etc/rancher/rke2/rke2.yaml
+            dest: ~/.kube/config
+            remote_src: true
+            mode: '0600'
+          become: true

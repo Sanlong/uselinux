@@ -1,0 +1,34 @@
+# Salt-Master 配置文件
+
+# 监听地址
+interface: {{ salt_master_interface }}
+
+# 发布端口
+publish_port: {{ salt_master_publish_port }}
+
+# 请求响应端口
+ret_port: {{ salt_master_ret_port }}
+
+# 工作目录
+file_roots:
+{% for env, roots in salt_master_file_roots.items() %}
+  {{ env }}:
+{% for root in roots %}
+    - {{ root }}
+{% endfor %}
+{% endfor %}
+
+# Pillar 目录
+pillar_roots:
+{% for env, roots in salt_master_pillar_roots.items() %}
+  {{ env }}:
+{% for root in roots %}
+    - {{ root }}
+{% endfor %}
+{% endfor %}
+
+# 日志级别
+log_level: {{ salt_master_log_level }}
+
+# 自动接受密钥
+auto_accept: {{ salt_master_auto_accept }}

@@ -1,0 +1,37 @@
+---
+- name: 安装 Pacemaker
+  hosts: all
+  vars:
+    hacluster_password: "mao3long"
+  tasks:
+    - name: 安装 Pacemaker(RHEL)
+      when: ansible_facts['distribution'] in ['Rocky', 'AlmaLinux']
+      block:
+        - name: 启用仓库
+          ansible.builtin.command:
+            cmd: dnf config-manager --enable highavailability
+          changed_when: true
+          become: true
+        - name: 安装 Pacemaker
+          ansible.builtin.dnf:
+            name:
+              - pcs
+              - haproxy
+              - cockpit
+              - vim
+              - bash-completion
+            state: present
+            update_cache: true
+          become: true
+        - name: 启用并启动 pcsd 服务
+          ansible.builtin.systemd:
+            name: pcsd
+            enabled: true
+            state: started
+            daemon_reload: true
+          become: true
+        - name: 设置hacluster密码
+          ansible.builtin.command:
+            cmd: echo hacluster:{{ hacluster_password }} | chpasswd
+          changed_when: true
+          become: true

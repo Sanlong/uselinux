@@ -1,0 +1,109 @@
+---
+- name: 同步所有hosts解析记录
+  hosts: all
+  become: true
+  vars:
+    domain: "mslinfo.lan"
+    # 定义需要同步的 hosts 解析记录
+    host:
+      - ip: "10.0.30.6"
+        name: "opse6"
+      - ip: "10.0.30.30"
+        name: "grafana"
+      - ip: "10.0.30.31"
+        name: "loki"
+      - ip: "10.0.30.33"
+        name: "maria"
+      - ip: "10.0.30.53"
+        name: "dns"
+      - ip: "10.0.30.54"
+        name: "postgre"
+      - ip: "10.0.30.70"
+        name: "zabbix"
+      - ip: "10.0.30.101"
+        name: "ceph1"
+      - ip: "10.0.30.102"
+        name: "ceph2"
+      - ip: "10.0.30.103"
+        name: "ceph3"
+      - ip: "10.0.30.111"
+        name: "rk1"
+      - ip: "10.0.30.112"
+        name: "rk2"
+      - ip: "10.0.30.113"
+        name: "rk3"
+      - ip: "10.0.30.114"
+        name: "rancher"
+      - ip: "10.0.30.116"
+        name: "rke2"
+      - ip: "10.0.30.117"
+        name: "pcs1"
+      - ip: "10.0.30.118"
+        name: "pcs2"
+      - ip: "10.0.30.119"
+        name: "pcs3"
+    timeserver:
+      - name: "ntp.ntsc.ac.cn"
+      - name: "ntp1.ntsc.ac.cn"
+      - name: "ntp2.ntsc.ac.cn"
+      - name: "ntp.aliyun.com"
+      - name: "ntp1.aliyun.com"
+      - name: "ntp2.aliyun.com"
+
+  tasks:
+    - name: 同步hosts解析记录到/etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "^{{ item.ip }} "
+        line: "{{ item.ip }} {{ item.name }}.{{ domain }} {{ item.name }}"
+        state: present
+        create: false
+      loop: "{{ host }}"
+      become: true
+    - name: 设置时区为Asia/Shanghai
+      ansible.builtin.command:
+        cmd: timedatectl set-timezone Asia/Shanghai
+      changed_when: true
+      become: true
+    - name: 安装chrony
+      ansible.builtin.package:
+        name: chrony
+        state: present
+        update_cache: true
+      become: true
+    - name: 设置中国ntp服务器
+      when: ansible_facts['distribution'] in ['Ubuntu', 'Debian']
+      ansible.builtin.file:
+        path: /etc/chrony/sources.d/cn-ntp.sources
+        owner: root
+        group: root
+        mode: '0644'
+        state: touch
+      become: true
+    - name: 添加中国ntp服务器源
+      when: ansible_facts['distribution'] in ['Ubuntu', 'Debian']
+      ansible.builtin.lineinfile:
+        path: /etc/chrony/sources.d/cn-ntp.sources
+        regexp: "^server {{ item.name }}"
+        line: "server {{ item.name }} iburst minpoll 4 maxpoll 10"
+        state: present
+        create: false
+      loop: "{{ timeserver }}"
+      become: true
+    - name: 添加中国ntp服务器源
+      when: ansible_facts['distribution'] in ['Rocky', 'AlmaLinux']
+      ansible.builtin.lineinfile:
+        path: /etc/chrony.conf
+        regexp: "^server {{ item.name }}"
+        line: "server {{ item.name }} iburst minpoll 4 maxpoll 10"
+        state: present
+        create: false
+      loop: "{{ timeserver }}"
+      become: true
+    - name: 启动chronyd服务
+      ansible.builtin.systemd:
+        name: chronyd
+        enabled: true
+        state: started
+        daemon_reload: true
+      become: true

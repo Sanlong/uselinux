@@ -1,0 +1,10 @@
+# Salt-Minion 配置文件
+
+# Master 地址
+master: {{ salt_master_address }}
+
+# Minion ID（默认使用主机名）
+# id: {{ ansible_hostname }}
+
+# 日志级别
+log_level: {{ salt_minion_log_level }}

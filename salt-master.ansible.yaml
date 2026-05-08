@@ -1,0 +1,226 @@
+---
+- name: 部署 Salt-Master
+  hosts: salt-master
+  become: true
+  vars:
+    salt_master_interface: "0.0.0.0"
+    salt_master_publish_port: "4505"
+    salt_master_ret_port: "4506"
+    salt_master_log_level: "info"
+    salt_master_auto_accept: false
+    salt_master_file_roots:
+      base:
+        - /srv/salt
+    salt_master_pillar_roots:
+      base:
+        - /srv/pillar
+
+  tasks:
+    - name: 检测操作系统类型
+      ansible.builtin.setup:
+        gather_subset:
+          - distribution
+
+    - name: Rocky Linux/AlmaLinux 部署
+      when: ansible_facts['distribution'] in ['Rocky', 'AlmaLinux']
+      block:
+        - name: 安装 EPEL 仓库
+          ansible.builtin.dnf:
+            name: epel-release
+            state: present
+
+        - name: 导入 SaltStack GPG 密钥
+          ansible.builtin.rpm_key:
+            key: https://repo.saltproject.io/py3/redhat/9/x86_64/latest/SALTSTACK-GPG-KEY.pub
+            state: present
+
+        - name: 添加 SaltStack 仓库
+          ansible.builtin.copy:
+            content: |
+              [salt-latest]
+              name=SaltStack Latest Release Channel for RHEL/CentOS 9
+              baseurl=https://repo.saltproject.io/py3/redhat/9/x86_64/latest
+              enabled=1
+              gpgcheck=1
+              gpgkey=https://repo.saltproject.io/py3/redhat/9/x86_64/latest/SALTSTACK-GPG-KEY.pub
+            dest: /etc/yum.repos.d/salt.repo
+            mode: '0644'
+
+        - name: 安装 Salt-Master
+          ansible.builtin.dnf:
+            name: salt-master
+            state: present
+            update_cache: true
+
+    - name: Ubuntu/Debian 部署
+      when: ansible_facts['distribution'] in ['Ubuntu', 'Debian']
+      block:
+        - name: 安装依赖
+          ansible.builtin.apt:
+            name:
+              - curl
+              - gnupg
+            state: present
+            update_cache: true
+
+        - name: 创建 GPG 密钥目录
+          ansible.builtin.file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: '0755'
+
+        - name: 导入 SaltStack GPG 密钥
+          ansible.builtin.shell:
+            cmd: curl -fsSL https://repo.saltproject.io/py3/ubuntu/22.04/amd64/latest/SALTSTACK-GPG-KEY.pub | gpg --dearmor -o /etc/apt/keyrings/salt-archive-keyring.gpg
+            creates: /etc/apt/keyrings/salt-archive-keyring.gpg
+
+        - name: 添加 SaltStack 仓库
+          ansible.builtin.copy:
+            content: |
+              deb [signed-by=/etc/apt/keyrings/salt-archive-keyring.gpg arch=amd64] https://repo.saltproject.io/py3/ubuntu/22.04/amd64/latest jammy main
+            dest: /etc/apt/sources.list.d/salt.list
+            mode: '0644'
+
+        - name: 安装 Salt-Master
+          ansible.builtin.apt:
+            name: salt-master
+            state: present
+            update_cache: true
+
+    - name: 创建 Salt 工作目录
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: salt
+        group: salt
+        mode: '0755'
+      loop:
+        - /srv/salt
+        - /srv/pillar
+
+    - name: 配置 Salt-Master
+      ansible.builtin.template:
+        src: salt-master.conf.j2
+        dest: /etc/salt/master
+        mode: '0644'
+      notify: 重启 Salt-Master
+
+    - name: 启动并启用 Salt-Master 服务
+      ansible.builtin.service:
+        name: salt-master
+        state: started
+        enabled: true
+
+    - name: 检查 Salt-Master 服务状态
+      ansible.builtin.service:
+        name: salt-master
+        state: started
+
+  handlers:
+    - name: 重启 Salt-Master
+      ansible.builtin.service:
+        name: salt-master
+        state: restarted
+
+- name: 部署 Salt-Minion（可选）
+  hosts: salt-minion
+  become: true
+  vars:
+    salt_master_address: "salt-master"
+    salt_minion_log_level: "info"
+
+  tasks:
+    - name: 检测操作系统类型
+      ansible.builtin.setup:
+        gather_subset:
+          - distribution
+
+    - name: Rocky Linux/AlmaLinux 部署
+      when: ansible_facts['distribution'] in ['Rocky', 'AlmaLinux']
+      block:
+        - name: 安装 EPEL 仓库
+          ansible.builtin.dnf:
+            name: epel-release
+            state: present
+
+        - name: 导入 SaltStack GPG 密钥
+          ansible.builtin.rpm_key:
+            key: https://repo.saltproject.io/py3/redhat/9/x86_64/latest/SALTSTACK-GPG-KEY.pub
+            state: present
+
+        - name: 添加 SaltStack 仓库
+          ansible.builtin.copy:
+            content: |
+              [salt-latest]
+              name=SaltStack Latest Release Channel for RHEL/CentOS 9
+              baseurl=https://repo.saltproject.io/py3/redhat/9/x86_64/latest
+              enabled=1
+              gpgcheck=1
+              gpgkey=https://repo.saltproject.io/py3/redhat/9/x86_64/latest/SALTSTACK-GPG-KEY.pub
+            dest: /etc/yum.repos.d/salt.repo
+            mode: '0644'
+
+        - name: 安装 Salt-Minion
+          ansible.builtin.dnf:
+            name: salt-minion
+            state: present
+            update_cache: true
+
+    - name: Ubuntu/Debian 部署
+      when: ansible_facts['distribution'] in ['Ubuntu', 'Debian']
+      block:
+        - name: 安装依赖
+          ansible.builtin.apt:
+            name:
+              - curl
+              - gnupg
+            state: present
+            update_cache: true
+
+        - name: 创建 GPG 密钥目录
+          ansible.builtin.file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: '0755'
+
+        - name: 导入 SaltStack GPG 密钥
+          ansible.builtin.shell:
+            cmd: curl -fsSL https://repo.saltproject.io/py3/ubuntu/22.04/amd64/latest/SALTSTACK-GPG-KEY.pub | gpg --dearmor -o /etc/apt/keyrings/salt-archive-keyring.gpg
+            creates: /etc/apt/keyrings/salt-archive-keyring.gpg
+
+        - name: 添加 SaltStack 仓库
+          ansible.builtin.copy:
+            content: |
+              deb [signed-by=/etc/apt/keyrings/salt-archive-keyring.gpg arch=amd64] https://repo.saltproject.io/py3/ubuntu/22.04/amd64/latest jammy main
+            dest: /etc/apt/sources.list.d/salt.list
+            mode: '0644'
+
+        - name: 安装 Salt-Minion
+          ansible.builtin.apt:
+            name: salt-minion
+            state: present
+            update_cache: true
+
+    - name: 配置 Salt-Minion
+      ansible.builtin.template:
+        src: salt-minion.conf.j2
+        dest: /etc/salt/minion
+        mode: '0644'
+      notify: 重启 Salt-Minion
+
+    - name: 启动并启用 Salt-Minion 服务
+      ansible.builtin.service:
+        name: salt-minion
+        state: started
+        enabled: true
+
+    - name: 检查 Salt-Minion 服务状态
+      ansible.builtin.service:
+        name: salt-minion
+        state: started
+
+  handlers:
+    - name: 重启 Salt-Minion
+      ansible.builtin.service:
+        name: salt-minion
+        state: restarted

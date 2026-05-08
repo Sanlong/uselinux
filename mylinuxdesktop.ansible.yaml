@@ -17,16 +17,15 @@
               - fcitx5-chinese-addons
               - ansible-lint
               - cockpit-pcp
-              - containerd
+              - docker.io
               - golang
-              - podman
               - build-essential
               - flatpak
               - git
               - curl
-              - vim
+              - neovim
               - wget
-              - sshuttle
+              - sshoot
             state: present
             update_cache: true
     - name: 设置flatpak
@@ -34,3 +33,5 @@
       block:
         - name: 添加官方源
           ansible.builtin.command: flatpak remote-add --if-not-exists flathub https://mirror.sjtu.edu.cn/flathub/flathub.flatpakrepo
+          changed_when: (flatpak search brave == 0) # 检查是否已添加
+          
