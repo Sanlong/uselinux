@@ -22,7 +22,7 @@
           - distribution
 
     - name: Rocky Linux/AlmaLinux 部署
-      when: ansible_facts['distribution'] in ['Rocky', 'AlmaLinux']
+      when: ansible_os_family == "RedHat"
       block:
         - name: 安装 EPEL 仓库
           ansible.builtin.dnf:

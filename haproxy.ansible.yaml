@@ -1,0 +1,22 @@
+---
+- name: 安装haproxy
+  hosts: ha1,ha2
+  vars:
+    service:
+  tasks:
+    - name: 安装haproxy依赖(RHEL)
+      when: ansible_facts['distribution'] in ['Rocky', 'AlmaLinux', 'CentOS', 'RedHat']
+      blocks:
+        - name: 安装haproxy
+          ansible.builtin.dnf:
+            name:
+              - haproxy
+              - keepalived
+            state: present
+          become: true
+        - name: 配置haproxy
+          ansible.builtin.copy:
+            dest: /etc/haproxy/conf.d/
+            content: |
+              {{ haproxy_cfg.cfg }}
+          become: true

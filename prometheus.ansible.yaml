@@ -1,0 +1,32 @@
+---
+- name: "Install Prometheus"
+  hosts: prometheus
+  become: true
+  vars:
+    software_name: "prometheus"
+  tasks:
+    - name: "在debian类系统上安装{{ software_name }}"
+      when: ansible_os_family == "Debian"
+      block:
+        - name: "添加Prometheus仓库(debian)"
+          ansible.builtin.apt_repository:
+            repo: deb https://apt.prometheus.io/deb stable main
+            filename: '/etc/apt/sources.list.d/prometheus.list'
+            state: absent
+        - name: "在debian类系统上安装{{ software_name }}"
+          ansible.builtin.apt:
+            name: '{{ software_name }}'
+            update_cache: true
+            state: present
+        - name: "配置启动参数{{ software_name }}"
+          ansible.builtin.lineinfile:
+            path: /etc/default/prometheus
+            regexp: 'ARGS'
+            line: 'ARGS="--web.enable-remote-write-receiver"'
+            state: present
+        - name: "启动服务{{ software_name }}"
+          ansible.builtin.systemd:
+            name: '{{ software_name }}'
+            state: started
+            enabled: true
+            daemon_reload: true

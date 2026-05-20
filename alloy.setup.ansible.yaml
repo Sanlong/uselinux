@@ -1,0 +1,111 @@
+---
+- name: "Install Alloy"
+  hosts: all
+  become: true
+  vars:
+    software_name: "alloy"
+    prometheus_url: "http://prometheus.mslinfo.lan:9090"
+    setup: true
+  tasks:
+    - name: "在debian类系统上安装alloy"
+      when: ansible_os_family == "Debian"
+      block:
+        - name: "添加Grafana仓库(debian)"
+          ansible.builtin.deb822_repository:
+            name: 'grafana'
+            uris: https://apt.grafana.com
+            types: [deb]
+            suites: [stable]
+            components: [main]
+            signed_by: https://apt.grafana.com/gpg.key
+            state: present
+        - name: "安装alloy(debian)"
+          when: setup is false
+          ansible.builtin.apt:
+            name: "{{ software_name }}"
+            update_cache: true
+            state: present
+    - name: "在rhel类系统上安装alloy"
+      when: ansible_os_family == "RedHat"
+      block:
+        - name: "添加Grafana仓库(rhel)"
+          ansible.builtin.yum_repository:
+            name: 'grafana'
+            description: 'grafana'
+            baseurl: 'https://rpm.grafana.com'
+            enabled: true
+            gpgcheck: true
+            repo_gpgcheck: true
+            gpgkey: 'https://rpm.grafana.com/gpg.key'
+            state: present
+        - name: "安装alloy(rhel)"
+          when: setup is false
+          ansible.builtin.dnf:
+            name: "{{ software_name }}"
+            update_cache: true
+            state: present
+    - name: "配置debian类系统上的alloy"
+      when: ansible_os_family == "Debian"
+      block:
+        - name: "主配置文件引入配置文件目录"
+          ansible.builtin.lineinfile:
+            path: /etc/default/alloy
+            regexp: '^CONFIG_FILE'
+            line: 'CONFIG_FILE="/etc/alloy/"'
+            state: present
+        - name: "设置alloy监听地址为0.0.0.0"
+          ansible.builtin.lineinfile:
+            path: /etc/default/alloy
+            regexp: '^CUSTOM_ARGS'
+            line: 'CUSTOM_ARGS="--server.http.listen-addr=0.0.0.0:12345"'
+            state: present
+        - name: "重启alloy服务"
+          ansible.builtin.systemd:
+            name: alloy
+            state: started
+            enabled: true
+
+    - name: "配置rhel类系统上的alloy"
+      when: ansible_os_family == "RedHat"
+      block:
+        - name: "主配置文件引入配置文件目录"
+          ansible.builtin.lineinfile:
+            path: /etc/sysconfig/alloy
+            regexp: '^CONFIG_FILE'
+            line: 'CONFIG_FILE="/etc/alloy/"'
+            state: present
+        - name: "设置alloy监听地址为0.0.0.0"
+          ansible.builtin.lineinfile:
+            path: /etc/sysconfig/alloy
+            regexp: '^CUSTOM_ARGS'
+            line: 'CUSTOM_ARGS="--server.http.listen-addr=0.0.0.0:12345"'
+            state: present
+        - name: "重启alloy服务"
+          ansible.builtin.systemd:
+            name: alloy
+            state: started
+            enabled: true
+
+    - name: "设置默认数据采集推送"
+      block:
+        - name: "修改引用模块"
+          ansible.builtin.lineinfile:
+            path: /etc/alloy/config.alloy
+            regexp: '  // TODO: components'
+            line: '    prometheus.remote_write.default.receiver,'
+            state: present
+        - name: "设置默认数据采集推送"
+          ansible.builtin.copy:
+            dest: /etc/alloy/prometheus.alloy
+            mode: '0644'
+            content: |
+              prometheus.remote_write "default" {
+                endpoint {
+                  url = "{{ prometheus_url }}/api/v1/write"
+                }
+              }
+        - name: "重启alloy服务"
+          ansible.builtin.systemd:
+            name: alloy
+            state: started
+            enabled: true

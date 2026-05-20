@@ -6,6 +6,8 @@
     domain: "mslinfo.lan"
     # 定义需要同步的 hosts 解析记录
     host:
+      - ip: "10.0.10.4"
+        name: "pve"
       - ip: "10.0.30.6"
         name: "opse6"
       - ip: "10.0.30.30"
@@ -20,6 +22,8 @@
         name: "postgre"
       - ip: "10.0.30.70"
         name: "zabbix"
+      - ip: "10.0.30.72"
+        name: "prometheus"
       - ip: "10.0.30.101"
         name: "ceph1"
       - ip: "10.0.30.102"
@@ -43,12 +47,8 @@
       - ip: "10.0.30.119"
         name: "pcs3"
     timeserver:
-      - name: "ntp.ntsc.ac.cn"
-      - name: "ntp1.ntsc.ac.cn"
-      - name: "ntp2.ntsc.ac.cn"
+      - name: "ntp.tencent.com"
       - name: "ntp.aliyun.com"
-      - name: "ntp1.aliyun.com"
-      - name: "ntp2.aliyun.com"
 
   tasks:
     - name: 同步hosts解析记录到/etc/hosts

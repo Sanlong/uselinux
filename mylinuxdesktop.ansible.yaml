@@ -1,37 +1,61 @@
 ---
 - name: Install My Linux Desktop
-  hosts: all
+  hosts: localhost
+  connection: local
   become: true
   tasks:
-    - name: "Install My Linux Desktop"
-      when: ansible_distribution == "Ubuntu"
+    - name: "初始化我的工作环境"
+      when: ansible_os_family == "Debian"
       block:
-        - name: "Add fsearch PPA repository"
+        - name: "在ubuntu上移除fsearch PPA repository"
+          when: ansible_distribution == "Ubuntu"
           ansible.builtin.apt_repository:
-            repo: ppa:fsearch-boxdoerfer/fsearch-stable
-            state: present
+            repo: ppa:christian-boxdoerfer/fsearch-stable
+            state: absent
         - name: "Ubuntu Desktop Installation"
           ansible.builtin.apt:
             pkg:
-              - ubuntu-restricted-extras
-              - fcitx5-chinese-addons
               - ansible-lint
+              - build-essential
+              - ubuntu-restricted-extras
+              - curl
               - cockpit-pcp
               - docker.io
+              - docker-compose-v2
+              - epiphany-browser
               - golang
-              - build-essential
               - flatpak
+              - fcitx5-chinese-addons
+              - fsearch
               - git
-              - curl
+              - 
+              - ptyxis
+              - sshuttle
+              - tree
+              - tealdeer
+              - plocate
               - neovim
               - wget
-              - sshoot
+              - https://ishell-down.oss-cn-beijing.aliyuncs.com/ishellpro_3.0.9_amd64.deb
+# - sshoot
             state: present
             update_cache: true
+        - name: "删除不需要的软件包"
+          ansible.builtin.apt:
+            pkg:
+              - sshoot
+              - vim
+              - vim-common
+              - vim-data
+              - vim-doc
+              - vim-tiny
+            state: absent
     - name: 设置flatpak
-      when: ansible_distribution == "Ubuntu"
+      when: ansible_os_family == "Debian"
       block:
-        - name: 添加官方源
-          ansible.builtin.command: flatpak remote-add --if-not-exists flathub https://mirror.sjtu.edu.cn/flathub/flathub.flatpakrepo
-          changed_when: (flatpak search brave == 0) # 检查是否已添加
-          
+        - name: "添加国内flatpak源flathubw"
+          community.general.flatpak_remote:
+            name: flathub
+            flatpakrepo_url: https://mirror.sjtu.edu.cn/flathub/flathub.flatpakrepo
+            state: present
+          become: true

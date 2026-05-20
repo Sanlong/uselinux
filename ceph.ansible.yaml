@@ -73,7 +73,8 @@
       when: inventory_hostname == ceph1.name
       block:
         - name: 初始化第一个节点
-          ansible.builtin.command: cephadm bootstrap --mon-ip "{{ ceph1.ip }}" --initial-dashboard-password "{{ ceph_password }}" --dashboard-password-noupdate
+          ansible.builtin.shell: |
+           cephadm bootstrap --mon-ip "{{ ceph1.ip }}" --initial-dashboard-password "{{ ceph_password }}" --dashboard-password-noupdate
           changed_when: true
         - name: 获取key
           ansible.builtin.command: ceph auth get client.bootstrap-osd

@@ -1,0 +1,46 @@
+---
+- name: "Install Alloy"
+  hosts: grafana
+  become: true
+  vars:
+    software_name: "grafana"
+  tasks:
+    - name: "在debian类系统上安装{{ software_name }}"
+      when: ansible_os_family == "Debian"
+      block:
+        - name: "添加Grafana GPG密钥(debian)"
+          ansible.builtin.apt_key:
+            url: https://apt.grafana.com/gpg.key
+            state: present
+        - name: "添加Grafana仓库(debian)"
+          ansible.builtin.apt_repository:
+            repo: deb https://apt.grafana.com stable main
+            filename: '/etc/apt/sources.list.d/grafana.list'
+            state: present
+        - name: "在debian类系统上安装{{ software_name }}"
+          ansible.builtin.apt:
+            name: '{{ software_name }}'
+            update_cache: true
+            state: present
+    - name: "在rhel类系统上安装{{ software_name }}"
+      when: ansible_os_family == "RedHat"
+      block:
+        - name: "添加Grafana GPG密钥(rhel)"
+          ansible.builtin.dnf:
+            name: 'grafana'
+            state: present
+        - name: "添加Grafana仓库(rhel)"
+          ansible.builtin.yum_repository:
+            name: 'grafana'
+            description: 'grafana'
+            baseurl: 'https://rpm.grafana.com'
+            enabled: true
+            gpgcheck: true
+            repo_gpgcheck: true
+            gpgkey: 'https://rpm.grafana.com/gpg.key'
+            state: present
+        - name: "在rhel类系统上安装{{ software_name }}"
+          ansible.builtin.dnf:
+            name: '{{ software_name }}'
+            update_cache: true
+            state: present
