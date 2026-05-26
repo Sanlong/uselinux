@@ -6,6 +6,8 @@
     domain: "mslinfo.lan"
     # 定义需要同步的 hosts 解析记录
     host:
+      - ip: "10.0.20.173"
+        name: "t14"
       - ip: "10.0.10.4"
         name: "pve"
       - ip: "10.0.30.6"
@@ -46,64 +48,14 @@
         name: "pcs2"
       - ip: "10.0.30.119"
         name: "pcs3"
-    timeserver:
-      - name: "ntp.tencent.com"
-      - name: "ntp.aliyun.com"
 
   tasks:
     - name: 同步hosts解析记录到/etc/hosts
       ansible.builtin.lineinfile:
         path: /etc/hosts
-        regexp: "^{{ item.ip }} "
+        regexp: "{{ item.name }}.{{ domain }}"
         line: "{{ item.ip }} {{ item.name }}.{{ domain }} {{ item.name }}"
         state: present
         create: false
       loop: "{{ host }}"
-      become: true
-    - name: 设置时区为Asia/Shanghai
-      ansible.builtin.command:
-        cmd: timedatectl set-timezone Asia/Shanghai
-      changed_when: true
-      become: true
-    - name: 安装chrony
-      ansible.builtin.package:
-        name: chrony
-        state: present
-        update_cache: true
-      become: true
-    - name: 设置中国ntp服务器
-      when: ansible_facts['distribution'] in ['Ubuntu', 'Debian']
-      ansible.builtin.file:
-        path: /etc/chrony/sources.d/cn-ntp.sources
-        owner: root
-        group: root
-        mode: '0644'
-        state: touch
-      become: true
-    - name: 添加中国ntp服务器源
-      when: ansible_facts['distribution'] in ['Ubuntu', 'Debian']
-      ansible.builtin.lineinfile:
-        path: /etc/chrony/sources.d/cn-ntp.sources
-        regexp: "^server {{ item.name }}"
-        line: "server {{ item.name }} iburst minpoll 4 maxpoll 10"
-        state: present
-        create: false
-      loop: "{{ timeserver }}"
-      become: true
-    - name: 添加中国ntp服务器源
-      when: ansible_facts['distribution'] in ['Rocky', 'AlmaLinux']
-      ansible.builtin.lineinfile:
-        path: /etc/chrony.conf
-        regexp: "^server {{ item.name }}"
-        line: "server {{ item.name }} iburst minpoll 4 maxpoll 10"
-        state: present
-        create: false
-      loop: "{{ timeserver }}"
-      become: true
-    - name: 启动chronyd服务
-      ansible.builtin.systemd:
-        name: chronyd
-        enabled: true
-        state: started
-        daemon_reload: true
       become: true

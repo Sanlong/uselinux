@@ -4,20 +4,54 @@
   become: true
   vars:
     software_name: "prometheus"
+    prometheus_version: "3.5.3"
+    install: true
   tasks:
+    - name: 基础准备
+      block:
+        - name: "判断文件是否存在"
+          ansible.builtin.stat:
+            path: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+          register: file_info
+        - name: 下载prometheus二进制文件
+          when: file_info.stat.exists is false
+## https://github.com/prometheus/prometheus/releases/download/v3.5.3/prometheus-3.5.3.linux-amd64.tar.gz
+          ansible.builtin.get_url:
+            url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.tar.gz"
+            dest: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+            mode: '0644'
+        - name: 解压prometheus二进制文件
+          ansible.builtin.unarchive:
+            src: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+            dest: "/tmp/prometheus-{{ prometheus_version }}"
+            remote_src: true
+            mode: '0755'
+            owner: 'root'
+            group: 'root'
+        - name: 复制prometheus二进制文件到系统路径
+          ansible.builtin.copy:
+            src: "/tmp/prometheus-{{ prometheus_version }}/prometheus"
+            dest: "/usr/bin/prometheus"
+            mode: '0755'
+            owner: 'root'
+            group: 'root'
+        - name: "复制promtool"
+          ansible.builtin.copy:
+            src: "/tmp/prometheus-{{ prometheus_version }}/promtool"
+            dest: "/usr/bin/promtool"
+            mode: '0755'
+            owner: 'root'
+            group: 'root'
+        - name: 复制prometheus配置文件到系统路径
+          ansible.builtin.copy:
+            src: "/tmp/prometheus-{{ prometheus_version }}/prometheus.yml"
+            dest: "/etc/prometheus/prometheus.yml"
+            mode: '0644'
+            owner: 'root'
+            group: 'root'
     - name: "在debian类系统上安装{{ software_name }}"
       when: ansible_os_family == "Debian"
       block:
-        - name: "添加Prometheus仓库(debian)"
-          ansible.builtin.apt_repository:
-            repo: deb https://apt.prometheus.io/deb stable main
-            filename: '/etc/apt/sources.list.d/prometheus.list'
-            state: absent
-        - name: "在debian类系统上安装{{ software_name }}"
-          ansible.builtin.apt:
-            name: '{{ software_name }}'
-            update_cache: true
-            state: present
         - name: "配置启动参数{{ software_name }}"
           ansible.builtin.lineinfile:
             path: /etc/default/prometheus

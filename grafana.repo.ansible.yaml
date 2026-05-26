@@ -1,0 +1,30 @@
+---
+- name: "添加Grafana仓库"
+  hosts: all
+  become: true
+  tasks:
+    - name: "在debian类系统上添加Grafana仓库"
+      when: ansible_os_family == "Debian"
+      block:
+        - name: "添加Grafana仓库(debian)"
+          ansible.builtin.deb822_repository:
+            name: 'grafana'
+            uris: https://apt.grafana.com
+            types: [deb]
+            suites: [stable]
+            components: [main]
+            signed_by: https://apt.grafana.com/gpg.key
+            state: present
+    - name: "在rhel类系统上添加Grafana仓库"
+      when: ansible_os_family == "RedHat"
+      block:
+        - name: "添加Grafana仓库(rhel)"
+          ansible.builtin.yum_repository:
+            name: 'grafana'
+            description: 'grafana'
+            baseurl: 'https://rpm.grafana.com'
+            enabled: true
+            gpgcheck: true
+            repo_gpgcheck: true
+            gpgkey: 'https://rpm.grafana.com/gpg.key'
+            state: present

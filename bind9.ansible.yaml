@@ -1,0 +1,12 @@
+---
+- name: 安装bind9
+  hosts: all
+  become: true
+  tasks:
+    - name: 安装bind9依赖
+      block:
+        - name: 安装bind9依赖
+          ansible.builtin.package:
+            name: bind9
+            state: present
+          become: true
