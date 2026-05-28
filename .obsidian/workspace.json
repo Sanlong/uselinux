@@ -1,24 +1,24 @@
 {
   "main": {
-    "id": "bd2b4a91023e69ff",
+    "id": "a00e77dc7238b74b",
     "type": "split",
     "children": [
       {
-        "id": "5e584d5dfe6a4fc1",
+        "id": "277ab6cd756cb0e0",
         "type": "tabs",
         "children": [
           {
-            "id": "45db87f6b774a36b",
+            "id": "063bf6e43696dd94",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "openstack/aio-quickstart-zh.md",
+                "file": "K3S/k3s_deploy.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "aio-quickstart-zh"
+              "title": "k3s_deploy"
             }
           }
         ]
@@ -27,15 +27,15 @@
     "direction": "vertical"
   },
   "left": {
-    "id": "87215fc57f781f44",
+    "id": "6a152f8db55fcf39",
     "type": "split",
     "children": [
       {
-        "id": "b14450892b1f4a94",
+        "id": "9bc1837910bbfc69",
         "type": "tabs",
         "children": [
           {
-            "id": "5fc34f4364bddc8b",
+            "id": "87e43dfd98b34f82",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -48,7 +48,7 @@
             }
           },
           {
-            "id": "bd16d38e89b8a382",
+            "id": "050277a6763dbb69",
             "type": "leaf",
             "state": {
               "type": "search",
@@ -65,7 +65,7 @@
             }
           },
           {
-            "id": "bc23a3bac544e2d6",
+            "id": "ed3f50c310100946",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -78,22 +78,23 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 300
   },
   "right": {
-    "id": "5060260a17455c48",
+    "id": "73af8eda183c55b5",
     "type": "split",
     "children": [
       {
-        "id": "05a70cc377dc56f6",
+        "id": "971775380d95af9e",
         "type": "tabs",
         "children": [
           {
-            "id": "6562d465f055f7ef",
+            "id": "294ca55a6abeaa50",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
+                "file": "K3S/k3s_deploy.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -103,24 +104,25 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "反向链接"
+              "title": "k3s_deploy 的反向链接列表"
             }
           },
           {
-            "id": "2d4162d5f119ed06",
+            "id": "6280e878b081d987",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "K3S/k3s_deploy.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "出链"
+              "title": "k3s_deploy 的出链列表"
             }
           },
           {
-            "id": "a81fb1caf2109814",
+            "id": "e2bc04bb9f647c5c",
             "type": "leaf",
             "state": {
               "type": "tag",
@@ -135,7 +137,7 @@
             }
           },
           {
-            "id": "47f051ca3c16e30c",
+            "id": "7f797133edd104b4",
             "type": "leaf",
             "state": {
               "type": "all-properties",
@@ -149,17 +151,18 @@
             }
           },
           {
-            "id": "5bfda57b5968fc0f",
+            "id": "9da1b076795b80a1",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
+                "file": "K3S/k3s_deploy.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "大纲"
+              "title": "k3s_deploy 的大纲"
             }
           }
         ]
@@ -180,19 +183,9 @@
       "bases:新建数据库": false
     }
   },
-  "active": "45db87f6b774a36b",
+  "active": "063bf6e43696dd94",
   "lastOpenFiles": [
-    "openstack/rhce_practical_lab.md",
-    "openstack/packstack-README.md",
-    "openstack/packstack-details.md",
-    "OpenSSH/openssh_know.md",
-    "未命名.canvas",
-    "未命名 1.base",
-    "未命名.base",
-    "openssh_know.md",
-    "install_podman.yml",
-    "ELK/Logstash.md",
-    "集团信息技术架构/01-IT架构总体规划.md",
-    "集团信息技术架构/02-安全规范与实施.md"
+    "rancher部署.md",
+    "容器化Prometheus配置指南.md"
   ]
 }

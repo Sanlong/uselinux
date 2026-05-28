@@ -11,7 +11,7 @@
     rke2_server_url: "https://{{ rke2_server_lb }}:9345"
 
   tasks:
-    - name: 检查系统是否已经安装此版本的 RKE2
+    - name: 检查系统是否已经安装此版本的RKE2
       ansible.builtin.shell: |
         rke2 --version | head -1 | awk '{print $3}'
       register: rke2_installed_version
@@ -20,10 +20,11 @@
       ansible.builtin.debug:
         msg: "检查系统是否已经安装此版本的 RKE2 结果：{{ rke2_installed_version.stdout }}"
     - name: 初始化 RHEL 系系统 (Rocky/AlmaLinux/CentOS/RedHat)
-      when: ansible_facts['distribution'] in ['Rocky', 'AlmaLinux', 'CentOS', 'RedHat']
+      when: ansible_os_family in ['RedHat'] and rke2_installed_version.stdout != rke2_version
       block:
         - name: 修正时间同步
           ansible.builtin.command: chronyc makestep
+          changed_when: false
           become: true
         - name: 安装依赖(RHEL)
           ansible.builtin.dnf:
@@ -41,11 +42,13 @@
           ansible.builtin.file:
             path: /etc/rancher/rke2
             state: directory
+            mode: '0755'
           become: true
 
         - name: 写入 RKE2 Server 配置文件
           ansible.builtin.copy:
             dest: /etc/rancher/rke2/config.yaml
+            mode: '0644'
             content: |
               server: {{ rke2_server_url }}
               token: {{ rke2_token }}
@@ -55,13 +58,23 @@
                 - {{ rke2_server_lb }}
                 - {{ rke2_server_lb_ip }}
           become: true
+        - name: 获取 RKE2 安装脚本
+          ansible.builtin.uri:
+            url: https://rancher-mirror.rancher.cn/rke2/install.sh
+            return_content: true
+            validate_certs: true
+          register: rke2_install_script
         - name: 使用国内镜像安装RKE2
           ansible.builtin.shell: |
-            curl -sfL https://rancher-mirror.rancher.cn/rke2/install.sh | sh -
+            {{ rke2_install_script.content }} | sh -
+          args:
+            executable: /bin/bash
+            warn: false
           environment:
             INSTALL_RKE2_MIRROR: cn
             INSTALL_RKE2_VERSION: "{{ rke2_version }}"
           become: true
+          changed_when: true
         - name: 启用并启动 RKE2 Server 服务
           ansible.builtin.systemd:
             name: rke2-server

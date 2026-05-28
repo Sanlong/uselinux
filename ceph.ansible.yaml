@@ -16,12 +16,11 @@
   tasks:
     ######
     - name: 配置ceph软件包源
-      when: ansible_distribution == "Rocky"
       block:
         - name: 配置hosts文件（所有节点）
           ansible.builtin.lineinfile:
             path: /etc/hosts
-            regexp: ^{{ item.ip }}
+            regexp: "{{ item.name }}"
             line: "{{ item.ip }} {{ item.name }}"
           loop:
             - "{{ ceph1 }}"
@@ -32,7 +31,7 @@
           ansible.builtin.package:
             name:
               - epel-release
-              - centos-release-ceph-squid
+              - centos-release-ceph-tentacle
               - chrony
               - python3-jinja2
               - curl
@@ -41,9 +40,9 @@
               - cephadm
             state: present
         - name: 配置时间同步（启动chronyd服务）
-          ansible.builtin.service:
+          ansible.builtin.systemd:
             name: chronyd
-            state: started
+            state: restarted
             enabled: true
         - name: 验证时间同步状态
           ansible.builtin.shell: |
@@ -51,8 +50,8 @@
             systemctl restart chronyd
             chronyc source
           changed_when: false
-          when: ansible_distribution == "Rocky"
         - name: 配置防火墙
+          when: ansible_os_family in ['RedHat']
           ansible.posix.firewalld:
             port: "{{ item }}"
             permanent: true
@@ -64,9 +63,8 @@
             - 6789/tcp
             - 6800-7300/tcp
         - name: 安装ceph软件包
-          ansible.builtin.package:
-            name:
-              - cephadm
+          ansible.builtin.dnf:
+            name: cephadm
             state: present
     ######
     - name: 配置第一个Monitor节点（node101)
