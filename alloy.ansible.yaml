@@ -1,0 +1,21 @@
+---
+- name: 部署 Grafana alloy
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - grafana.grafana.alloy
+  vars:
+    # 部署模式：binary / docker
+    alloy_deploy_mode: binary
+    # 部署版本
+    alloy_version: 1.17.1
+    # 完整River配置，直接写入/etc/alloy/config.alloy
+    alloy_service_extra_env:
+      - "TZ=Asia/Shanghai"
+    alloy_expose_ports: true
+    #alloy_config: |
+    alloy_env_file_vars:
+      CONFIG_FILE: "/etc/alloy/"
+      CUSTOM_ARGS: "--server.http.listen-addr=0.0.0.0:12345"
+      #CONFIG_FILE: "~/alloy-scenarios/linux/config.alloy"

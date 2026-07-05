@@ -32,13 +32,15 @@
         name: "ceph2"
       - ip: "10.0.30.103"
         name: "ceph3"
+      - ip: "10.0.30.110"
+        name: "k3s"
       - ip: "10.0.30.111"
         name: "rk1"
       - ip: "10.0.30.112"
         name: "rk2"
       - ip: "10.0.30.113"
         name: "rk3"
-      - ip: "10.0.30.114"
+      - ip: "10.0.30.110"
         name: "rancher"
       - ip: "10.0.30.116"
         name: "rke2"
@@ -48,6 +50,11 @@
         name: "pcs2"
       - ip: "10.0.30.119"
         name: "pcs3"
+      - ip: "10.0.30.120"
+        name: "harbor"
+      - ip: "10.0.30.129"
+        name: "jmpserver"
+
 
   tasks:
     - name: 同步hosts解析记录到/etc/hosts

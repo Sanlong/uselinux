@@ -5,7 +5,7 @@
     hacluster_password: "mao3long"
   tasks:
     - name: 安装 Pacemaker(RHEL)
-      when: ansible_facts['distribution'] in ['Rocky', 'AlmaLinux']
+      when: ansible_os_family == "RedHat"
       block:
         - name: 启用仓库
           ansible.builtin.command:
@@ -19,6 +19,7 @@
               - haproxy
               - cockpit
               - vim
+              - neovim
               - bash-completion
             state: present
             update_cache: true

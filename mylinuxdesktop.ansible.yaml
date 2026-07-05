@@ -58,3 +58,13 @@
             flatpakrepo_url: https://mirror.sjtu.edu.cn/flathub/flathub.flatpakrepo
             state: present
           become: true
+        - name: "刷新flatpak缓存"
+          community.general.flatpak:
+            update: true
+            refresh: true
+          become: true
+        - name: "安装flatpak应用"
+          community.general.flatpak:
+            name: ghcr.io/ansible/community-ansible-dev-tools:latest
+            state: present
+          become: true

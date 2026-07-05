@@ -3,8 +3,8 @@
   hosts: all
   become: true
   vars:
-    domain_name: "" # 网站域名
-    harbor_admin_password: "" # harbor管理员密码
+    domain_name: "harbor.mslinfo.lan" # 网站域名
+    harbor_admin_password: "Mao3long" # harbor管理员密码
   tasks:
     - name: 创建harbor用户
       when: domain_name != "" and harbor_admin_password != ""

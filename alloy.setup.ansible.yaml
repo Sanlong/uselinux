@@ -85,16 +85,24 @@
             name: alloy
             state: started
             enabled: true
+        - name: "开启psi采集"
+          ansible.builtin.command:
+            cmd: grubby --update-kernel=ALL --args="psi=1"
+          register: psi_grubby
+          changed_when: psi_grubby.rc == 0 and ('psi=1' not in psi_grubby.stdout)
+##          notify: "重启alloy服务"
 
     - name: "设置默认数据采集推送"
       block:
         - name: "修改引用模块"
+          when: false
           ansible.builtin.lineinfile:
             path: /etc/alloy/config.alloy
             regexp: '  // TODO: components'
             line: '    prometheus.remote_write.default.receiver,'
             state: present
         - name: "设置默认数据采集推送"
+          when: false
           ansible.builtin.copy:
             dest: /etc/alloy/prometheus.alloy
             mode: '0644'

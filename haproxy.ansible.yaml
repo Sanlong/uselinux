@@ -18,6 +18,43 @@
           ansible.builtin.copy:
             dest: /etc/{{ service }}/conf.d/
             content: |
-              {{ haproxy_cfg.cfg }}
+              # ------------------------------
+              # RKE2 高可用负载均衡专用配置
+              # 仅包含业务配置，无全局/默认段
+              # 代理端口：6443(KubeAPI) + 9345(RKE2注册)
+              # ------------------------------
+
+              # 1. KubeAPI 前端 (K8s 控制平面)
+              frontend rke2_kubeapi
+                  bind 10.0.30.116:6443
+                  mode tcp
+                  option tcplog
+                  default_backend rke2_kubeapi_nodes
+
+              # 2. KubeAPI 后端 (3个 RKE2 Server 节点)
+              backend rke2_kubeapi_nodes
+                  mode tcp
+                  balance roundrobin
+                  option tcp-check
+                  # 健康检查：2秒一次，连续2次正常上线，3次失败下线
+                  server rke1 10.0.30.111:6443 check inter 2000 rise 2 fall 3
+                  server rke2 10.0.30.112:6443 check inter 2000 rise 2 fall 3
+                  server rke3 10.0.30.113:6443 check inter 2000 rise 2 fall 3
+
+              # 3. RKE2 注册端口前端 (Agent 加入集群用)
+              frontend rke2_registry
+                  bind 10.0.30.116:9345
+                  mode tcp
+                  option tcplog
+                  default_backend rke2_registry_nodes
+
+              # 4. RKE2 注册端口后端
+              backend rke2_registry_nodes
+                  mode tcp
+                  balance roundrobin
+                  option tcp-check
+                  server rke1 10.0.30.111:9345 check inter 2000 rise 2 fall 3
+                  server rke2 10.0.30.112:9345 check inter 2000 rise 2 fall 3
+                  server rke3 10.0.30.113:9345 check inter 2000 rise 2 fall 3
             mode: '0644'
           become: true
