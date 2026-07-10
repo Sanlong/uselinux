@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: t14awx-admin-password
+  namespace: awx
+stringData:
+  password: Mao3long
+---
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: t14awx
+  namespace: awx
+spec:
+  admin_user: admin
+  admin_password_secret: t14awx-admin-password
+  service_type: LoadBalancer
